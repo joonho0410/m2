@@ -119,7 +119,15 @@ class QuizGame:
         print(f"\n결과: 총 {total}문제 중 {score}문제를 맞혔습니다.")
 
     def add_quiz(self):
-        print("\n(퀴즈 추가 기능은 준비 중입니다.)")
+        print("\n[퀴즈 추가]")
+        question = self._read_text("문제를 입력하세요: ")
+        choices = []
+        for i in range(1, 5):
+            choice = self._read_text(f"선택지 {i}을(를) 입력하세요: ")
+            choices.append(choice)
+        answer = self._read_int("정답 번호(1~4)를 입력하세요: ", 1, 4)
+        self.quizzes.append(Quiz(question, choices, answer))
+        print("퀴즈가 추가되었습니다.")
 
     def list_quizzes(self):
         print("\n(퀴즈 목록 기능은 준비 중입니다.)")
