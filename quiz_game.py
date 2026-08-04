@@ -16,28 +16,60 @@ class QuizGame:
 
     # ----- 파일 저장/불러오기 -----
 
-    def load_data(self):
+    def _read_disk_state(self):
+        """저장 파일에 있는 최신 상태를 읽어온다. 파일이 없거나 손상되었으면 None."""
         if not os.path.exists(self.data_file):
-            self.save_data()
-            return
+            return None
         try:
             with open(self.data_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             quizzes = [Quiz.from_dict(item) for item in data["quizzes"]]
             if not quizzes:
                 raise ValueError("퀴즈 데이터가 비어 있습니다.")
-            self.quizzes = quizzes
-            self.best_score = data.get("best_score")
+            return quizzes, data.get("best_score")
         except (json.JSONDecodeError, KeyError, ValueError, OSError):
-            print(
-                "\n[안내] 저장된 데이터 파일이 없거나 손상되어 "
-                "기본 퀴즈 데이터로 복구합니다."
-            )
+            return None
+
+    def load_data(self):
+        state = self._read_disk_state()
+        if state is None:
+            if os.path.exists(self.data_file):
+                print(
+                    "\n[안내] 저장된 데이터 파일이 손상되어 "
+                    "기본 퀴즈 데이터로 복구합니다."
+                )
             self.quizzes = list(DEFAULT_QUIZZES)
             self.best_score = None
             self.save_data()
+            return
+        self.quizzes, self.best_score = state
 
-    def save_data(self):
+    def save_data(self, new_quiz=None, achieved_score=None):
+        """상태를 저장한다.
+
+        여러 개의 프로그램이 동시에 실행 중일 수 있으므로, 저장 직전에
+        파일을 다시 읽어 최신 데이터를 가져온 뒤 그 위에 이번 변경 사항
+        (새 퀴즈 / 새로 달성한 점수)만 얹어서 저장한다. 이렇게 하면 다른
+        프로그램이 먼저 저장해 둔 내용을 그대로 덮어써서 잃어버리는 것을
+        막을 수 있다.
+        """
+        state = self._read_disk_state()
+        quizzes = state[0] if state else list(self.quizzes)
+        best_score = state[1] if state else self.best_score
+
+        if new_quiz is not None:
+            quizzes.append(new_quiz)
+
+        best_score_updated = False
+        if achieved_score is not None and (
+            best_score is None or achieved_score > best_score
+        ):
+            best_score = achieved_score
+            best_score_updated = True
+
+        self.quizzes = quizzes
+        self.best_score = best_score
+
         data = {
             "quizzes": [quiz.to_dict() for quiz in self.quizzes],
             "best_score": self.best_score,
@@ -47,6 +79,8 @@ class QuizGame:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except OSError as e:
             print(f"\n[오류] 데이터를 저장하지 못했습니다: {e}")
+
+        return best_score_updated
 
     # ----- 메뉴/화면 -----
 
@@ -106,10 +140,8 @@ class QuizGame:
             else:
                 print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
         print(f"\n결과: 총 {total}문제 중 {score}문제를 맞혔습니다.")
-        if self.best_score is None or score > self.best_score:
-            self.best_score = score
+        if self.save_data(achieved_score=score):
             print("최고 점수를 갱신했습니다!")
-        self.save_data()
 
     # ----- 기능: 퀴즈 추가 -----
 
@@ -121,8 +153,8 @@ class QuizGame:
             choice = self._read_text(f"선택지 {i}을(를) 입력하세요: ")
             choices.append(choice)
         answer = self._read_int("정답 번호(1~4)를 입력하세요: ", 1, 4)
-        self.quizzes.append(Quiz(question, choices, answer))
-        self.save_data()
+        new_quiz = Quiz(question, choices, answer)
+        self.save_data(new_quiz=new_quiz)
         print("퀴즈가 추가되었습니다.")
 
     # ----- 기능: 퀴즈 목록 -----
