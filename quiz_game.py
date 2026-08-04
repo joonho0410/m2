@@ -2,61 +2,9 @@ import json
 import os
 
 from quiz import Quiz
+from quiz_data import DEFAULT_QUIZZES
 
 DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
-
-DEFAULT_QUIZZES = [
-    Quiz(
-        "다음 중 파이썬의 정수형 자료형을 나타내는 것은?",
-        ["str", "int", "bool", "list"],
-        2,
-    ),
-    Quiz(
-        "여러 조건을 순서대로 검사할 때 사용하는 파이썬 키워드가 아닌 것은?",
-        ["if", "elif", "else", "switch"],
-        4,
-    ),
-    Quiz(
-        "파이썬에서 함수를 정의할 때 사용하는 키워드는?",
-        ["func", "def", "function", "define"],
-        2,
-    ),
-    Quiz(
-        "리스트(list)와 딕셔너리(dict)의 차이로 옳은 것은?",
-        [
-            "리스트는 key-value 쌍으로 이루어져 있다",
-            "딕셔너리는 순서가 있는 인덱스로만 접근한다",
-            "리스트는 순서가 있는 값들의 모음이고, 딕셔너리는 key-value 쌍의 모음이다",
-            "둘 다 완전히 같은 자료형이다",
-        ],
-        3,
-    ),
-    Quiz(
-        "for문과 while문에 대한 설명으로 옳은 것은?",
-        [
-            "for문은 조건이 참인 동안 반복한다",
-            "while문은 반복 가능한 객체를 순회할 때 주로 사용한다",
-            "for문은 반복 가능한 객체(iterable)를 순회할 때 주로 사용한다",
-            "for문과 while문은 기능적으로 완전히 동일하며 차이가 없다",
-        ],
-        3,
-    ),
-    Quiz(
-        "파이썬에서 클래스를 정의할 때 사용하는 키워드는?",
-        ["class", "struct", "object", "type"],
-        1,
-    ),
-    Quiz(
-        "__init__ 메서드에 대한 설명으로 옳은 것은?",
-        [
-            "클래스의 모든 메서드를 삭제하는 메서드이다",
-            "객체가 생성될 때 자동으로 호출되어 초기값을 설정하는 메서드이다",
-            "파일을 읽고 쓰는 메서드이다",
-            "반드시 매개변수를 받지 않아야 한다",
-        ],
-        2,
-    ),
-]
 
 
 class QuizGame:
@@ -64,6 +12,8 @@ class QuizGame:
         self.data_file = data_file
         self.quizzes = list(DEFAULT_QUIZZES)
         self.best_score = None
+
+    # ----- 메뉴/화면 -----
 
     def show_menu(self):
         print("\n" + "=" * 30)
@@ -74,6 +24,8 @@ class QuizGame:
         print("3. 퀴즈 목록")
         print("4. 점수 확인")
         print("5. 종료")
+
+    # ----- 공통 입력 처리 -----
 
     def _read_int(self, prompt, min_value, max_value):
         while True:
@@ -99,6 +51,8 @@ class QuizGame:
                 continue
             return raw
 
+    # ----- 기능: 퀴즈 풀기 -----
+
     def play_quiz(self):
         if not self.quizzes:
             print("\n등록된 퀴즈가 없습니다. 먼저 퀴즈를 추가해 주세요.")
@@ -121,6 +75,8 @@ class QuizGame:
             self.best_score = score
             print("최고 점수를 갱신했습니다!")
 
+    # ----- 기능: 퀴즈 추가 -----
+
     def add_quiz(self):
         print("\n[퀴즈 추가]")
         question = self._read_text("문제를 입력하세요: ")
@@ -132,6 +88,8 @@ class QuizGame:
         self.quizzes.append(Quiz(question, choices, answer))
         print("퀴즈가 추가되었습니다.")
 
+    # ----- 기능: 퀴즈 목록 -----
+
     def list_quizzes(self):
         print("\n[퀴즈 목록]")
         if not self.quizzes:
@@ -140,6 +98,8 @@ class QuizGame:
         for i, quiz in enumerate(self.quizzes, start=1):
             print(f"{i}. {quiz.question} (정답: {quiz.answer}번)")
 
+    # ----- 기능: 점수 확인 -----
+
     def show_score(self):
         print("\n[점수 확인]")
         if self.best_score is None:
@@ -147,23 +107,24 @@ class QuizGame:
         else:
             print(f"최고 점수: {self.best_score}")
 
+    # ----- 실행 루프 -----
+
     def run(self):
+        actions = {
+            1: self.play_quiz,
+            2: self.add_quiz,
+            3: self.list_quizzes,
+            4: self.show_score,
+        }
         print("퀴즈 게임을 시작합니다.")
         while True:
             self.show_menu()
             try:
                 choice = self._read_int("메뉴를 선택하세요: ", 1, 5)
-                if choice == 1:
-                    self.play_quiz()
-                elif choice == 2:
-                    self.add_quiz()
-                elif choice == 3:
-                    self.list_quizzes()
-                elif choice == 4:
-                    self.show_score()
-                elif choice == 5:
+                if choice == 5:
                     print("\n게임을 종료합니다. 이용해 주셔서 감사합니다.")
                     break
+                actions[choice]()
             except (EOFError, KeyboardInterrupt):
                 print("\n\n입력이 중단되었습니다. 안전하게 종료합니다.")
                 break
