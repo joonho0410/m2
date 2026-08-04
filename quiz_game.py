@@ -12,6 +12,41 @@ class QuizGame:
         self.data_file = data_file
         self.quizzes = list(DEFAULT_QUIZZES)
         self.best_score = None
+        self.load_data()
+
+    # ----- 파일 저장/불러오기 -----
+
+    def load_data(self):
+        if not os.path.exists(self.data_file):
+            self.save_data()
+            return
+        try:
+            with open(self.data_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            quizzes = [Quiz.from_dict(item) for item in data["quizzes"]]
+            if not quizzes:
+                raise ValueError("퀴즈 데이터가 비어 있습니다.")
+            self.quizzes = quizzes
+            self.best_score = data.get("best_score")
+        except (json.JSONDecodeError, KeyError, ValueError, OSError):
+            print(
+                "\n[안내] 저장된 데이터 파일이 없거나 손상되어 "
+                "기본 퀴즈 데이터로 복구합니다."
+            )
+            self.quizzes = list(DEFAULT_QUIZZES)
+            self.best_score = None
+            self.save_data()
+
+    def save_data(self):
+        data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+        }
+        try:
+            with open(self.data_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except OSError as e:
+            print(f"\n[오류] 데이터를 저장하지 못했습니다: {e}")
 
     # ----- 메뉴/화면 -----
 
@@ -74,6 +109,7 @@ class QuizGame:
         if self.best_score is None or score > self.best_score:
             self.best_score = score
             print("최고 점수를 갱신했습니다!")
+        self.save_data()
 
     # ----- 기능: 퀴즈 추가 -----
 
@@ -86,6 +122,7 @@ class QuizGame:
             choices.append(choice)
         answer = self._read_int("정답 번호(1~4)를 입력하세요: ", 1, 4)
         self.quizzes.append(Quiz(question, choices, answer))
+        self.save_data()
         print("퀴즈가 추가되었습니다.")
 
     # ----- 기능: 퀴즈 목록 -----
@@ -122,9 +159,11 @@ class QuizGame:
             try:
                 choice = self._read_int("메뉴를 선택하세요: ", 1, 5)
                 if choice == 5:
+                    self.save_data()
                     print("\n게임을 종료합니다. 이용해 주셔서 감사합니다.")
                     break
                 actions[choice]()
             except (EOFError, KeyboardInterrupt):
-                print("\n\n입력이 중단되었습니다. 안전하게 종료합니다.")
+                print("\n\n입력이 중단되었습니다. 저장 후 안전하게 종료합니다.")
+                self.save_data()
                 break
