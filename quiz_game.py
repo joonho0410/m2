@@ -100,7 +100,23 @@ class QuizGame:
             return raw
 
     def play_quiz(self):
-        print("\n(퀴즈 풀기 기능은 준비 중입니다.)")
+        if not self.quizzes:
+            print("\n등록된 퀴즈가 없습니다. 먼저 퀴즈를 추가해 주세요.")
+            return
+        total = len(self.quizzes)
+        score = 0
+        print(f"\n총 {total}문제를 출제합니다.")
+        for i, quiz in enumerate(self.quizzes, start=1):
+            quiz.display(i)
+            answer = self._read_int(
+                "정답 번호를 입력하세요: ", 1, len(quiz.choices)
+            )
+            if quiz.is_correct(answer):
+                print("정답입니다!")
+                score += 1
+            else:
+                print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
+        print(f"\n결과: 총 {total}문제 중 {score}문제를 맞혔습니다.")
 
     def add_quiz(self):
         print("\n(퀴즈 추가 기능은 준비 중입니다.)")
