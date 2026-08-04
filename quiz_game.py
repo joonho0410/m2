@@ -117,6 +117,9 @@ class QuizGame:
             else:
                 print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
         print(f"\n결과: 총 {total}문제 중 {score}문제를 맞혔습니다.")
+        if self.best_score is None or score > self.best_score:
+            self.best_score = score
+            print("최고 점수를 갱신했습니다!")
 
     def add_quiz(self):
         print("\n[퀴즈 추가]")
@@ -138,7 +141,11 @@ class QuizGame:
             print(f"{i}. {quiz.question} (정답: {quiz.answer}번)")
 
     def show_score(self):
-        print("\n(점수 확인 기능은 준비 중입니다.)")
+        print("\n[점수 확인]")
+        if self.best_score is None:
+            print("아직 퀴즈를 풀지 않았습니다.")
+        else:
+            print(f"최고 점수: {self.best_score}")
 
     def run(self):
         print("퀴즈 게임을 시작합니다.")
